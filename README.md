@@ -28,6 +28,7 @@ This works. It is also genuinely involved — this guide exists because I did it
 | **Parallels Desktop** (licensed) | Needed **only** to run Wabbajack. See [Part 3](#part-3-build-the-modlist-in-a-windows-vm). |
 | **Windows 11 VM** | Inside Parallels. |
 | **Skyrim Special Edition** on Steam | You must own it. |
+| **Anniversary Edition upgrade** | **Required.** GtS is an *AE* list — it needs all Creation Club content. The free Special Edition base game alone will not work. See [Part 2](#part-2-clean-complete-skyrim-installs-do-this-on-both). |
 | **Nexus Mods Premium** | Strongly recommended — without it, Wabbajack requires a manual click per file across hundreds of mods. |
 | **~350 GB free disk** | Modlist is ~110 GB installed, plus downloads, plus a duplicate during transfer. |
 
@@ -75,11 +76,50 @@ You only need the VM once, for the build.
 
 ---
 
-## Part 2: Install Skyrim SE in the bottle
+## Part 2: Clean, complete Skyrim installs (do this on BOTH)
+
+> **Read this section twice.** It applies to **both** the CrossOver bottle *and* the Windows VM, and getting it wrong is the single most common cause of Wabbajack failures. Wabbajack validates your base game — a dirty install or missing Creation Club content will fail the build, or produce a list that breaks at runtime.
+
+### 2.1 — It must be Anniversary Edition (all Creation Club content)
+
+Gate to Sovngarde is an **AE list**. It expects the full Creation Club library present in `Data`. **Wabbajack does not download this content** — it comes from your game install, so it must already be there before you start.
+
+1. Own the **Anniversary Edition upgrade** on Steam. The free "Special Edition" base game alone is *not* enough.
+2. Launch Skyrim once and let Steam **finish downloading all Creation Club content**. This is a large download that happens *after* the base game finishes — it's easy to think you're done when you aren't.
+3. **Verify before running Wabbajack.** A correct AE install has ~148 CC files plus the `_ResourcePack` marker:
+
+```bash
+# Point at your Skyrim install's Data folder
+ls "<Skyrim>/Data" | grep -icE "^cc.*\.(esl|esm|bsa)$"   # expect ~148
+ls "<Skyrim>/Data" | grep -i "_ResourcePack"             # must show .esl and .bsa
+```
+
+If the count is low or `_ResourcePack` is missing, the Creation Club download hasn't finished. **Wait for it.** Starting Wabbajack early will fail validation.
+
+### 2.2 — It must be a clean, vanilla install
+
+Wabbajack requires an untouched game. Leftover files from previous modding will corrupt the build in ways that are painful to diagnose later.
+
+- **No mods, no SKSE, no ENB** in the game folder
+- **No loose files** in `Data` beyond vanilla + Creation Club
+- **If the install has ever been modded: delete the entire Skyrim folder and reinstall from Steam.** Uninstalling through Steam frequently leaves files behind — check the folder is actually gone before reinstalling
+- **Delete the INI folder** so it regenerates clean: `Documents/My Games/Skyrim Special Edition`
+- Set Steam's language for Skyrim to **English** (Wabbajack validates against English assets)
+- **Launch to the main menu once** after the clean install, then quit — this generates fresh INIs
+- Avoid installing under `Program Files` (permissions); a custom Steam library folder is safer
+
+> A "mostly clean" install is not clean. If in doubt, delete and reinstall — it's faster than debugging a corrupted build.
+
+### 2.3 — Stop Steam from updating Skyrim
+
+A Skyrim update mid-project will break SKSE and the entire list. In Steam: **right-click Skyrim SE → Properties → Updates → "Only update this game when I launch it."**
+
+### 2.4 — Then install into the bottle
 
 1. Install **Steam** into the bottle (CrossOver's app installer, or run `SteamSetup.exe`).
-2. Log in and install **Skyrim Special Edition**.
-3. **Launch the game once** to let it initialize, then quit.
+2. Log in and install **Skyrim Special Edition** + let all Creation Club content download.
+3. Apply 2.1–2.3 above.
+4. **Launch the game once** to let it initialize, then quit.
 
 > Steam must be running whenever you play — Skyrim needs it for DRM.
 
@@ -109,7 +149,17 @@ E:\Downloads
 
 ### 3.2 — Install Skyrim SE in the VM too
 
-Yes, twice. Wabbajack builds the modlist *against* a real Skyrim install, so the VM needs its own copy. Install Steam in Windows, install Skyrim SE (put it on `E:` to save boot-drive space), and launch it once.
+Yes, twice. Wabbajack builds the modlist *against* a real Skyrim install, so the VM needs its own copy.
+
+1. Install Steam in Windows, install **Skyrim Special Edition**, and put it on `E:` to save boot-drive space.
+2. **Apply every requirement from [Part 2](#part-2-clean-complete-skyrim-installs-do-this-on-both) here as well** — this is the install Wabbajack actually validates against:
+   - Full **Anniversary Edition / Creation Club** content downloaded (~148 `cc*` files + `_ResourcePack`)
+   - Completely **clean and unmodded**
+   - Steam language set to **English**
+   - Steam updates set to **"only when I launch"**
+3. Launch to the main menu once, then quit.
+
+> This is the install Wabbajack checks. If Creation Club content is still downloading, or the folder has leftovers from previous modding, the build will fail here.
 
 ### 3.3 — Run Wabbajack
 
@@ -341,6 +391,9 @@ The lockfile and process checks prevent launching duplicate MO2 instances, which
 | Two MO2 windows | Never run two instances — it breaks the VFS. Kill both and start one. |
 | Crash referencing `hdtsmp64.dll` | HDT-SMP cloth physics. Use the Faster HDT-SMP **Performance** preset. |
 | Stutter every few seconds | Background apps stealing CPU cores. See [Part 8](#part-8-performance-tuning). |
+| Wabbajack fails validation / "game files" errors | Dirty install or incomplete Creation Club download. See [Part 2](#part-2-clean-complete-skyrim-installs-do-this-on-both). |
+| Missing masters / `cc*.esl` errors in MO2 | Creation Club content wasn't fully downloaded before the build. Verify ~148 `cc*` files + `_ResourcePack` exist. |
+| List worked, then broke after a Steam update | Skyrim auto-updated and broke SKSE. Set updates to "only when I launch" ([Part 2.3](#23--stop-steam-from-updating-skyrim)). |
 
 ---
 
